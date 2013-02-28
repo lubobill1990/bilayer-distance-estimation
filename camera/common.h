@@ -8,7 +8,7 @@ using namespace std;
 typedef unsigned int uint;
 typedef enum _direction{LEFT,RIGHT}Direction;
 extern const int patchSize;
-const int searchWidth=80;
+const int searchWidth=60;
 
 extern Mat rightEyeImg,
 	leftEyeImg,

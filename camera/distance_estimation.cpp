@@ -10,7 +10,13 @@
 #include "common.h"
 using namespace std;
 using namespace cv;
+#define PYRTIME 2
+
+#ifdef PYRTIME
 const int patchSize=20;
+#else
+const int patchSize=10;
+#endif
 typedef   HANDLE   Semaphore;   //   信号量的Windows原型   
 #define   P(S)   WaitForSingleObject(S,   INFINITE)   //   定义Windows下的P操作
 #define   V(S)   ReleaseSemaphore(S,   1,   NULL)     //   定义Windows下的V操作
@@ -148,21 +154,33 @@ void ThreadCaptureLeftImageAndShow(PVOID param){
 	leftRunning=true;
 	while(true)
 	{
+#ifdef PYRTIME
 		cap>>leftCaptureBuffer2;
-
-		//pyrDown(leftCaptureBuffer,leftCaptureBuffer2);
 		EnterCriticalSection(&cs_leftImg);
 		pyrDown(leftCaptureBuffer2,leftEyeImg);
 		leftBuffer=leftEyeImg.clone();
 		LeaveCriticalSection(&cs_leftImg);
 
 		Canny(leftCaptureBuffer2,leftEdgeBuffer2,150,50);
-		//pyrDown(leftEdgeBuffer1,leftEdgeBuffer2);
+
+		EnterCriticalSection(&cs_leftEdgeImg);
+		pyrDown(leftEdgeBuffer2,leftEdgeImg);
+		LeaveCriticalSection(&cs_leftEdgeImg);
+#else
+		cap>>leftCaptureBuffer;
+		pyrDown(leftCaptureBuffer,leftCaptureBuffer2);
+		EnterCriticalSection(&cs_leftImg);
+		pyrDown(leftCaptureBuffer2,leftEyeImg);
+		leftBuffer=leftEyeImg.clone();
+		LeaveCriticalSection(&cs_leftImg);
+		Canny(leftCaptureBuffer,leftEdgeBuffer1,150,50);
+		pyrDown(leftEdgeBuffer1,leftEdgeBuffer2);
 
 		EnterCriticalSection(&cs_leftEdgeImg);
 		pyrDown(leftEdgeBuffer2,leftEdgeImg);
 		LeaveCriticalSection(&cs_leftEdgeImg);
 
+#endif
 		EnterCriticalSection(&cs_leftImgResult);
 		mergeImage(leftBuffer,leftEyeResult);
 		LeaveCriticalSection(&cs_leftImgResult);
@@ -188,21 +206,35 @@ void ThreadCaptureRightImageAndShow(PVOID param){
 	rightRunning=true;
 	while(true)
 	{
+#ifdef PYRTIME
 		cap>>rightCaptureBuffer2;
 
-		//pyrDown(rightCaptureBuffer,rightCaptureBuffer2);
 		EnterCriticalSection(&cs_rightImg);
 		pyrDown(rightCaptureBuffer2,rightEyeImg);
+		rightBuffer=rightEyeImg.clone();
 		LeaveCriticalSection(&cs_rightImg);
 
 		Canny(rightCaptureBuffer2,rightEdgeBuffer2,150,50);
-		//pyrDown(rightEdgeBuffer1,rightEdgeBuffer2);
+		
+		EnterCriticalSection(&cs_rightEdgeImg);
+		pyrDown(rightEdgeBuffer2,rightEdgeImg);
+		LeaveCriticalSection(&cs_rightEdgeImg);
+#else
+		cap>>rightCaptureBuffer;
+
+		pyrDown(rightCaptureBuffer,rightCaptureBuffer2);
+		EnterCriticalSection(&cs_rightImg);
+		pyrDown(rightCaptureBuffer2,rightEyeImg);
+		rightBuffer=rightEyeImg.clone();
+		LeaveCriticalSection(&cs_rightImg);
+
+		Canny(rightCaptureBuffer,rightEdgeBuffer1,150,50);
+		pyrDown(rightEdgeBuffer1,rightEdgeBuffer2);
 		EnterCriticalSection(&cs_rightEdgeImg);
 		pyrDown(rightEdgeBuffer2,rightEdgeImg);
 		LeaveCriticalSection(&cs_rightEdgeImg);
 
-		rightBuffer=rightEyeImg.clone();
-
+#endif
 		EnterCriticalSection(&cs_rightImgResult);
 		mergeImage(rightBuffer,rightEyeResult);
 		LeaveCriticalSection(&cs_rightImgResult);
